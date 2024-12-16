@@ -22,6 +22,7 @@ from sklearn.model_selection import GridSearchCV
 def changeDataset(df):
     """This function is meant to remove dropna values and remove spaces in strings"""
     #print(f'Nº null values: {df.isna().sum().sum()}')
+    df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
     df = df.rename(columns=lambda x: x.strip() if isinstance(x, str) else x)    # REMOVE SPACES IN STRING
     df = df.dropna().reset_index(drop=True)                                     # REMOVE NULL VALUE
     return df
@@ -37,12 +38,10 @@ def preProcessFirstData(trainPath):
 
     df = pd.read_csv(trainPath)
     df = changeDataset(df)
-    
-    print(df.head(5))
     featuresToDelete = ["MARITAL STATUS"]
     df = deleteFeatures(df, featuresToDelete)
-
-    dfTargetTrain = pd.DataFrame(df.pop('TARGET'))
+    
+    dfTargetTrain = pd.DataFrame(df.pop('TARGET')).astype(int)
     #eliminate possible other missing values and replace them with NaN
     
     df = df.apply(pd.to_numeric, errors='coerce')
@@ -75,6 +74,8 @@ def main():
     options = [["Neural Network", trainNN], ["Decision Tree", trainDT]]
     
     dfData, dfTarget = preProcessFirstData("COVID_numerics.csv")
+    print(dfData.head(5))
+    print(dfTarget.head(5))
     for i in range(len(options)):
         accuracyList = list()
         precisionList = list()
