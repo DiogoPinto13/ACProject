@@ -20,7 +20,9 @@ import pickle
 from sklearn.model_selection import GridSearchCV
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
+from sklearn.tree import DecisionTreeClassifier
 import threading
+import os
 
 def changeDataset(df):
     """This function is meant to remove dropna values and remove spaces in strings"""
@@ -95,6 +97,20 @@ def trainNN(dfTrain, dfTargetTrain, dfTest, dfTargetTest, accuracyList, precisio
 
 def trainDT(dfTrain, dfTargetTrain, dfTest, dfTargetTest, accuracyList, precisionList, recallList, f1ScoreList):
     print("Using Decision Trees")
+    model = DecisionTreeClassifier(criterion='entropy', 
+                                   splitter='best', 
+                                   max_depth=3, 
+                                   min_samples_split=4,
+                                   min_samples_leaf=2,
+                                   max_features=None, 
+                                   random_state=42, 
+                                   max_leaf_nodes=4)
+    
+    model.fit(dfTrain, dfTargetTrain)
+
+    predictions = model.predict(dfTest)
+    accuracyList.append(accuracy_score(dfTargetTest, predictions))
+
 
 def writeResults(option, accuracyList, precisionList, recallList, f1ScoreList):
     pass
