@@ -18,6 +18,9 @@ from tensorflow.keras.losses import CategoricalCrossentropy
 import os
 import pickle
 from sklearn.model_selection import GridSearchCV
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+import threading
 
 def changeDataset(df):
     """This function is meant to remove dropna values and remove spaces in strings"""
@@ -61,10 +64,36 @@ def preProcessFirstData(trainPath):
     return pd.DataFrame(dfNormalized), pd.DataFrame(dfTargetTrain)
 
 
-def trainNN(dfData, dfTarget):
-    print("Using neural network")
+def startTrain(optionFunction, optionString, dfTrain, dfTargetTrain, dfTest, dfTargetTest):
+    accuracyList = list()
+    precisionList = list()
+    recallList = list()
+    f1ScoreList = list()
+    
+    for i in range(5):
+        optionFunction(dfTrain, dfTargetTrain, dfTest, dfTargetTest, accuracyList, precisionList, recallList, f1ScoreList)
+        writeResults(optionString, accuracyList, precisionList, recallList, f1ScoreList)
+    
+    print(accuracyList)
 
-def trainDT(dfData, dfTarget):
+def trainNN(dfTrain, dfTargetTrain, dfTest, dfTargetTest, accuracyList, precisionList, recallList, f1ScoreList):
+    print("Using neural network")
+    print(dfTrain.shape[1])
+    model = Sequential()
+
+    model.add(Dense(dfTrain.shape[1], activation="relu"))
+    model.add(Dense(dfTrain.shape[1], activation="relu"))
+    model.add(Dense(1, activation="linear"))
+
+    model.compile(loss="binary_crossentropy", optimizer='adam', metrics=['accuracy'])
+
+    model.fit(dfTrain, dfTargetTrain, batch_size=32, epochs=10, verbose=1)
+
+    predictions = (model.predict(dfTest) > 0.5).astype(int)  # Predict and threshold probabilities
+    accuracyList.append(accuracy_score(dfTargetTest, predictions))
+
+
+def trainDT(dfTrain, dfTargetTrain, dfTest, dfTargetTest, accuracyList, precisionList, recallList, f1ScoreList):
     print("Using Decision Trees")
 
 def writeResults(option, accuracyList, precisionList, recallList, f1ScoreList):
@@ -76,16 +105,18 @@ def main():
     dfData, dfTarget = preProcessFirstData("COVID_numerics.csv")
     print(dfData.head(5))
     print(dfTarget.head(5))
+
+    dfTrain, dfTest, dfTargetTrain, dfTargetTest = train_test_split(dfData, dfTarget, test_size=0.2, random_state=42)
+
+    hOptions = list()
+
     for i in range(len(options)):
-        accuracyList = list()
-        precisionList = list()
-        recallList = list()
-        f1ScoreList = list()
+        hOptions.append(threading.Thread(target=startTrain, args=(options[i][1], options[i][0], dfTrain, dfTargetTrain, dfTest, dfTargetTest)))
 
-        for j in range(30):
-            options[i][1](dfData, dfTarget)
-            writeResults(options[i][0], accuracyList, precisionList, recallList, f1ScoreList)
-
+    for i in range(len(hOptions)):
+        hOptions[i].start()
+        hOptions[i].join()
+        
 
 if __name__ == "__main__":
     main()
