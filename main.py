@@ -1,6 +1,7 @@
 import tensorflow as tf
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 import time
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler, PowerTransformer
 from sklearn.impute import SimpleImputer
@@ -9,7 +10,7 @@ from keras.layers import Dense, Conv1D, Flatten, MaxPooling1D, Dropout, Input
 from tensorflow.keras.models import Sequential, load_model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import to_categorical
-from tensorflow.keras.metrics import Recall, Precision
+#from tensorflow.keras.metrics import Recall, Precision
 #from tensorflow.keras.metrics import Precision, Recall
 from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
@@ -21,6 +22,7 @@ from sklearn.model_selection import GridSearchCV
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.tree import plot_tree
 import threading
 import os
 
@@ -76,7 +78,10 @@ def startTrain(optionFunction, optionString, dfTrain, dfTargetTrain, dfTest, dfT
         optionFunction(dfTrain, dfTargetTrain, dfTest, dfTargetTest, accuracyList, precisionList, recallList, f1ScoreList)
         writeResults(optionString, accuracyList, precisionList, recallList, f1ScoreList)
     
-    print(accuracyList)
+    print("Accurancy: ", accuracyList)
+    print("Precision: ", precisionList)
+    print("Recall: ", recallList)
+    print("F1Score: ", f1ScoreList)
 
 def trainNN(dfTrain, dfTargetTrain, dfTest, dfTargetTest, accuracyList, precisionList, recallList, f1ScoreList):
     print("Using neural network")
@@ -93,6 +98,16 @@ def trainNN(dfTrain, dfTargetTrain, dfTest, dfTargetTest, accuracyList, precisio
 
     predictions = (model.predict(dfTest) > 0.5).astype(int)  # Predict and threshold probabilities
     accuracyList.append(accuracy_score(dfTargetTest, predictions))
+    
+    cm    = confusion_matrix(dfTargetTest, predictions)
+    TN, FP, FN, TP = cm.ravel()
+    Precision    = TP/(TP+FP)
+    Recall    = TP/(TP+FN)
+    F1    = (2*Precision*Recall)/(Precision+Recall)
+    
+    precisionList.append(Precision)
+    recallList.append(Recall)
+    f1ScoreList.append(F1)
 
 
 def trainDT(dfTrain, dfTargetTrain, dfTest, dfTargetTest, accuracyList, precisionList, recallList, f1ScoreList):
@@ -109,7 +124,22 @@ def trainDT(dfTrain, dfTargetTrain, dfTest, dfTargetTest, accuracyList, precisio
     model.fit(dfTrain, dfTargetTrain)
 
     predictions = model.predict(dfTest)
+    """
+    plt.figure(figsize=(5,5))
+    plot_tree(model)
+    plt.show()
+    """
     accuracyList.append(accuracy_score(dfTargetTest, predictions))
+    
+    cm    = confusion_matrix(dfTargetTest, predictions)
+    TN, FP, FN, TP = cm.ravel()
+    Precision    = TP/(TP+FP)
+    Recall    = TP/(TP+FN)
+    F1    = (2*Precision*Recall)/(Precision+Recall)
+    
+    precisionList.append(Precision)
+    recallList.append(Recall)
+    f1ScoreList.append(F1)
 
 
 def writeResults(option, accuracyList, precisionList, recallList, f1ScoreList):
@@ -131,6 +161,7 @@ def main():
 
     for i in range(len(hOptions)):
         hOptions[i].start()
+    for i in range(len(hOptions)):
         hOptions[i].join()
         
 
