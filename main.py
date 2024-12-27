@@ -158,14 +158,21 @@ def trainDT(dfTrain, dfTargetTrain, dfTest, dfTargetTest, accuracyList, precisio
 
 def evaluateAutoencoder(autoencoder, df, dfTarget, threshold):
     reconstructed = autoencoder.predict(df)
-    mae = np.mean(np.abs(df - reconstructed), axis=1)
-
-    predictions = (mae > threshold).astype(int)
+    #loss = np.mean(np.abs(df - reconstructed), axis=1)
+    loss = mae(reconstructed, df)
+    predictions = (loss > threshold)
     cm = confusion_matrix(dfTarget, predictions)
     trueNegatives, falsePositives, falseNegatives, truePositives = cm.ravel()
     total = trueNegatives + falsePositives + falseNegatives + truePositives
+    
     accuracy = (truePositives + trueNegatives) / total
+    precision = (truePositives) / (truePositives + falsePositives)
+    recall = (truePositives) / (truePositives + falseNegatives)
+    f1Score = (2 * precision * recall) / (precision + recall)
     print("accuracy = " + str(accuracy))
+    print("precision = " + str(precision))
+    print("recall = " + str(recall))
+    print("f1Score = " + str(f1Score))
 
 def trainImg(dfImgNormal, dfImgAnomaly):
     accuracyList = list()
@@ -202,8 +209,8 @@ def trainImg(dfImgNormal, dfImgAnomaly):
         layers.Flatten(),
         layers.Dense(inputDim)
     ])
-    autoencoder.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.001), loss="mae")
-    autoencoder.fit(dfImgNormalTrain, dfImgNormalTrain, batch_size=32, epochs=20, verbose=1)
+    autoencoder.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.01), loss="mae")
+    autoencoder.fit(dfImgNormalTrain, dfImgNormalTrain, batch_size=32, epochs=50, verbose=1)
 
     #evaluation
     trainMae = autoencoder.evaluate(dfImgNormalTrain, dfImgNormalTrain, verbose=0)
@@ -221,7 +228,7 @@ def trainImg(dfImgNormal, dfImgAnomaly):
     #compute the threshold
     reconstructed = autoencoder.predict(dfImgNormal, verbose=False)
     loss = mae(reconstructed, dfImgNormal)
-    threshold = np.mean(loss) + 2*np.std(loss) 
+    threshold = np.mean(loss) + 0.5*np.std(loss) 
 
     #evaluate the model's performance
     print("Evaluating normal data used for training")
@@ -247,7 +254,7 @@ def main():
 
     trainImg(dfImgNormal, dfImgAnomaly)
     hOptions = list()
-
+    return
     for i in range(len(options)):
         hOptions.append(threading.Thread(target=startTrain, args=(options[i][1], options[i][0], dfTrain, dfTargetTrain, dfTest, dfTargetTest)))
     
