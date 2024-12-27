@@ -7,6 +7,7 @@ from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler, Po
 from sklearn.impute import SimpleImputer
 from sklearn.metrics import precision_score, recall_score, accuracy_score, confusion_matrix
 from keras.layers import Dense, Conv1D, Flatten, MaxPooling1D, Dropout, Input
+from tensorflow.keras import layers
 from tensorflow.keras.models import Sequential, load_model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import to_categorical
@@ -16,6 +17,7 @@ from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, precision_score, recall_score, accuracy_score, f1_score
 from tensorflow.keras.losses import CategoricalCrossentropy
+from tensorflow.keras.metrics import mae
 import os
 import pickle
 from sklearn.model_selection import GridSearchCV
@@ -67,6 +69,19 @@ def preProcessFirstData(trainPath):
 
     return pd.DataFrame(dfNormalized), pd.DataFrame(dfTargetTrain)
 
+def preProcessSecondData(trainPath, dfTarget):
+    """Function to read the images and return a dataframe"""
+    df = pd.read_csv(trainPath, header=None)
+    #split the df according to normal and abnormal
+    anomalyImgIndex = dfTarget.index[dfTarget['TARGET'] == 1].tolist()
+    normalIndex = dfTarget.index[dfTarget['TARGET'] == 0].tolist()
+
+    #print(anomalyImgIndex)
+    #print(normalIndex)  
+    anomalyImg = df.loc[(anomalyImgIndex)]
+    normalImg = df.loc[normalIndex]
+
+    return pd.DataFrame(normalImg), pd.DataFrame(anomalyImg)
 
 def startTrain(optionFunction, optionString, dfTrain, dfTargetTrain, dfTest, dfTargetTest):
     accuracyList = list()
@@ -96,7 +111,7 @@ def trainNN(dfTrain, dfTargetTrain, dfTest, dfTargetTest, accuracyList, precisio
 
     model.fit(dfTrain, dfTargetTrain, batch_size=32, epochs=10, verbose=1)
 
-    predictions = (model.predict(dfTest) > 0.5).astype(int)  # Predict and threshold probabilities
+    predictions = (model.predict(dfTest) > 0.5).astype(int)
     accuracyList.append(accuracy_score(dfTargetTest, predictions))
     
     cm    = confusion_matrix(dfTargetTest, predictions)
@@ -141,24 +156,101 @@ def trainDT(dfTrain, dfTargetTrain, dfTest, dfTargetTest, accuracyList, precisio
     recallList.append(Recall)
     f1ScoreList.append(F1)
 
+def evaluateAutoencoder(autoencoder, df, dfTarget, threshold):
+    reconstructed = autoencoder.predict(df)
+    mae = np.mean(np.abs(df - reconstructed), axis=1)
+
+    predictions = (mae > threshold).astype(int)
+    cm = confusion_matrix(dfTarget, predictions)
+    trueNegatives, falsePositives, falseNegatives, truePositives = cm.ravel()
+    total = trueNegatives + falsePositives + falseNegatives + truePositives
+    accuracy = (truePositives + trueNegatives) / total
+    print("accuracy = " + str(accuracy))
+
+def trainImg(dfImgNormal, dfImgAnomaly):
+    accuracyList = list()
+    precisionList = list()
+    recallList = list()
+    f1ScoreList = list()
+
+    dfImgNormalTrain, dfImgNormalTest = train_test_split(dfImgNormal, test_size=0.30, random_state=45, shuffle=True)
+
+    inputDim = dfImgNormal.shape[-1]
+    latentDim = 32
+
+    autoencoder = tf.keras.Sequential([
+        #ENCODER
+        layers.Input(shape=(inputDim,)),
+        layers.Reshape((inputDim, 1)),  # Reshape to 3D for Conv1D
+        layers.Conv1D(128, 3, strides=1, activation='relu', padding="same"),
+        layers.BatchNormalization(),
+        layers.MaxPooling1D(2, padding="same"),
+        layers.Conv1D(128, 3, strides=1, activation='relu', padding="same"),
+        layers.BatchNormalization(),
+        layers.MaxPooling1D(2, padding="same"),
+        layers.Conv1D(latentDim, 3, strides=1, activation='relu', padding="same"),
+        layers.BatchNormalization(),
+        layers.MaxPooling1D(2, padding="same"),
+
+        #DECODER
+        layers.Conv1DTranspose(latentDim, 3, strides=1, activation='relu', padding="same"),
+        layers.BatchNormalization(),
+        layers.Conv1DTranspose(128, 3, strides=1, activation='relu', padding="same"),
+        layers.BatchNormalization(),
+        layers.Conv1DTranspose(128, 3, strides=1, activation='relu', padding="same"),
+        layers.BatchNormalization(),
+        layers.Flatten(),
+        layers.Dense(inputDim)
+    ])
+    autoencoder.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.001), loss="mae")
+    autoencoder.fit(dfImgNormalTrain, dfImgNormalTrain, batch_size=32, epochs=20, verbose=1)
+
+    #evaluation
+    trainMae = autoencoder.evaluate(dfImgNormalTrain, dfImgNormalTrain, verbose=0)
+    testMae = autoencoder.evaluate(dfImgNormalTest, dfImgNormalTest, verbose=0)
+    anomalyMae = autoencoder.evaluate(dfImgAnomaly, dfImgAnomaly, verbose=0)
+
+    print("Training dataset error: ", trainMae)
+    print("Testing dataset error: ", testMae)
+    print("Anormaly dataset error: ", anomalyMae)
+
+    dfImgNormalTrainTarget = np.zeros(dfImgNormalTrain.shape[0])
+    dfImgNormalTestTarget = np.zeros(dfImgNormalTest.shape[0])
+    dfImgAnomalyTarget = np.ones(dfImgAnomaly.shape[0])
+
+    #compute the threshold
+    reconstructed = autoencoder.predict(dfImgNormal, verbose=False)
+    loss = mae(reconstructed, dfImgNormal)
+    threshold = np.mean(loss) + 2*np.std(loss) 
+
+    #evaluate the model's performance
+    print("Evaluating normal data used for training")
+    evaluateAutoencoder(autoencoder, dfImgNormalTrain, dfImgNormalTrainTarget, threshold)
+    
+    print("Evaluating normal data used for testing")
+    evaluateAutoencoder(autoencoder, dfImgNormalTest, dfImgNormalTestTarget, threshold)
+    
+    print("Evaluating abnormal data")
+    evaluateAutoencoder(autoencoder, dfImgAnomaly, dfImgAnomalyTarget, threshold)
 
 def writeResults(option, accuracyList, precisionList, recallList, f1ScoreList):
     pass
 
 def main():
     options = [["Neural Network", trainNN], ["Decision Tree", trainDT]]
-    
     dfData, dfTarget = preProcessFirstData("COVID_numerics.csv")
+    dfImgNormal, dfImgAnomaly = preProcessSecondData("COVID_IMG.csv", dfTarget)
     print(dfData.head(5))
     print(dfTarget.head(5))
 
     dfTrain, dfTest, dfTargetTrain, dfTargetTest = train_test_split(dfData, dfTarget, test_size=0.2, random_state=42)
 
+    trainImg(dfImgNormal, dfImgAnomaly)
     hOptions = list()
 
     for i in range(len(options)):
         hOptions.append(threading.Thread(target=startTrain, args=(options[i][1], options[i][0], dfTrain, dfTargetTrain, dfTest, dfTargetTest)))
-
+    
     for i in range(len(hOptions)):
         hOptions[i].start()
     for i in range(len(hOptions)):
