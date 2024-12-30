@@ -81,7 +81,7 @@ def preProcessSecondData(trainPath, dfTarget):
     anomalyImg = df.loc[(anomalyImgIndex)]
     normalImg = df.loc[normalIndex]
 
-    return pd.DataFrame(normalImg), pd.DataFrame(anomalyImg)
+    return pd.DataFrame(normalImg), pd.DataFrame(anomalyImg), df
 
 def startTrain(optionFunction, optionString, dfTrain, dfTargetTrain, dfTest, dfTargetTest):
     accuracyList = list()
@@ -161,6 +161,9 @@ def evaluateAutoencoder(autoencoder, df, dfTarget, threshold):
     #loss = np.mean(np.abs(df - reconstructed), axis=1)
     loss = mae(reconstructed, df)
     predictions = (loss > threshold)
+    
+    #print("Predictions:", predictions)
+    
     cm = confusion_matrix(dfTarget, predictions)
     trueNegatives, falsePositives, falseNegatives, truePositives = cm.ravel()
     total = trueNegatives + falsePositives + falseNegatives + truePositives
@@ -173,8 +176,10 @@ def evaluateAutoencoder(autoencoder, df, dfTarget, threshold):
     print("precision = " + str(precision))
     print("recall = " + str(recall))
     print("f1Score = " + str(f1Score))
+    
+    return predictions
 
-def trainImg(dfImgNormal, dfImgAnomaly):
+def trainImg(dfImgNormal, dfImgAnomaly, dfImg, dfTarget):
     accuracyList = list()
     precisionList = list()
     recallList = list()
@@ -219,7 +224,7 @@ def trainImg(dfImgNormal, dfImgAnomaly):
 
     print("Training dataset error: ", trainMae)
     print("Testing dataset error: ", testMae)
-    print("Anormaly dataset error: ", anomalyMae)
+    print("Anomaly dataset error: ", anomalyMae)
 
     dfImgNormalTrainTarget = np.zeros(dfImgNormalTrain.shape[0])
     dfImgNormalTestTarget = np.zeros(dfImgNormalTest.shape[0])
@@ -228,7 +233,7 @@ def trainImg(dfImgNormal, dfImgAnomaly):
     #compute the threshold
     reconstructed = autoencoder.predict(dfImgNormal, verbose=False)
     loss = mae(reconstructed, dfImgNormal)
-    threshold = np.mean(loss) + 0.5*np.std(loss) 
+    threshold = np.mean(loss) + 0.5*np.std(loss)
 
     #evaluate the model's performance
     print("Evaluating normal data used for training")
@@ -239,6 +244,10 @@ def trainImg(dfImgNormal, dfImgAnomaly):
     
     print("Evaluating abnormal data")
     evaluateAutoencoder(autoencoder, dfImgAnomaly, dfImgAnomalyTarget, threshold)
+    
+    predictions = evaluateAutoencoder(autoencoder, dfImg, dfTarget, threshold)
+    
+    return predictions
 
 def writeResults(option, accuracyList, precisionList, recallList, f1ScoreList):
     pass
@@ -246,15 +255,23 @@ def writeResults(option, accuracyList, precisionList, recallList, f1ScoreList):
 def main():
     options = [["Neural Network", trainNN], ["Decision Tree", trainDT]]
     dfData, dfTarget = preProcessFirstData("COVID_numerics.csv")
-    dfImgNormal, dfImgAnomaly = preProcessSecondData("COVID_IMG.csv", dfTarget)
+    dfImgNormal, dfImgAnomaly, dfImg = preProcessSecondData("COVID_IMG.csv", dfTarget)
     print(dfData.head(5))
     print(dfTarget.head(5))
 
     dfTrain, dfTest, dfTargetTrain, dfTargetTest = train_test_split(dfData, dfTarget, test_size=0.2, random_state=42)
 
-    trainImg(dfImgNormal, dfImgAnomaly)
+    predictions = trainImg(dfImgNormal, dfImgAnomaly, dfImg, dfTarget)
+    predictions = tf.cast(predictions,tf.float32).numpy()
+    
+    print("Predictions:", predictions)
+    
+    dfData[dfData.columns.size] = predictions
+    
+    print("dfData:",dfData)
+    
     hOptions = list()
-    return
+    
     for i in range(len(options)):
         hOptions.append(threading.Thread(target=startTrain, args=(options[i][1], options[i][0], dfTrain, dfTargetTrain, dfTest, dfTargetTest)))
     
