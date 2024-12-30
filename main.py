@@ -259,17 +259,17 @@ def main():
     print(dfData.head(5))
     print(dfTarget.head(5))
 
-    dfTrain, dfTest, dfTargetTrain, dfTargetTest = train_test_split(dfData, dfTarget, test_size=0.2, random_state=42)
-
     predictions = trainImg(dfImgNormal, dfImgAnomaly, dfImg, dfTarget)
     predictions = tf.cast(predictions,tf.float32).numpy()
     
     print("Predictions:", predictions)
     
+    #add the predictions of the ECG
     dfData[dfData.columns.size] = predictions
-    
-    print("dfData:",dfData)
-    
+    dfTrain, dfTest, dfTargetTrain, dfTargetTest = train_test_split(dfData, dfTarget, test_size=0.2, random_state=42)
+
+    print("dfData:",dfData.head(5))
+    print("dfTrain: ", dfTrain.head(5))
     hOptions = list()
     
     for i in range(len(options)):
