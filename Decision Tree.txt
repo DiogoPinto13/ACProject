@@ -1,0 +1,45 @@
+Iteration: 1
+Accuracy Mean: 0.775
+Accuracy Std: 0.0
+Precision Mean: 0.7037037037037037
+Precision Std: 0.0
+Recall Mean: 0.5
+Recall Std: 0.0
+F1Score Mean: 0.5846153846153846
+F1Score Std: 0.0
+Iteration: 2
+Accuracy Mean: 0.775
+Accuracy Std: 0.0
+Precision Mean: 0.7037037037037037
+Precision Std: 0.0
+Recall Mean: 0.5
+Recall Std: 0.0
+F1Score Mean: 0.5846153846153846
+F1Score Std: 0.0
+Iteration: 3
+Accuracy Mean: 0.775
+Accuracy Std: 0.0
+Precision Mean: 0.7037037037037037
+Precision Std: 0.0
+Recall Mean: 0.5
+Recall Std: 0.0
+F1Score Mean: 0.5846153846153846
+F1Score Std: 0.0
+Iteration: 4
+Accuracy Mean: 0.775
+Accuracy Std: 0.0
+Precision Mean: 0.7037037037037037
+Precision Std: 0.0
+Recall Mean: 0.5
+Recall Std: 0.0
+F1Score Mean: 0.5846153846153846
+F1Score Std: 0.0
+Iteration: 5
+Accuracy Mean: 0.775
+Accuracy Std: 0.0
+Precision Mean: 0.7037037037037037
+Precision Std: 0.0
+Recall Mean: 0.5
+Recall Std: 0.0
+F1Score Mean: 0.5846153846153846
+F1Score Std: 0.0

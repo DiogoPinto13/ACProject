@@ -88,10 +88,12 @@ def startTrain(optionFunction, optionString, dfTrain, dfTargetTrain, dfTest, dfT
     precisionList = list()
     recallList = list()
     f1ScoreList = list()
-    
+    iteration = 0
+
     for i in range(5):
+        iteration += 1
         optionFunction(dfTrain, dfTargetTrain, dfTest, dfTargetTest, accuracyList, precisionList, recallList, f1ScoreList)
-        writeResults(optionString, accuracyList, precisionList, recallList, f1ScoreList)
+        writeResults(iteration, optionString, accuracyList, precisionList, recallList, f1ScoreList)
     
     print("Accurancy: ", accuracyList)
     print("Precision: ", precisionList)
@@ -249,8 +251,24 @@ def trainImg(dfImgNormal, dfImgAnomaly, dfImg, dfTarget):
     
     return predictions
 
-def writeResults(option, accuracyList, precisionList, recallList, f1ScoreList):
-    pass
+def writeResults(iteration, option, accuracyList, precisionList, recallList, f1ScoreList):
+    filePath = str(option) + ".txt"
+    
+    #append mode
+    with open(filePath, 'a') as file:
+        file.write("Iteration: {}\n".format(iteration))
+        file.write("Accuracy Mean: {}\n".format(np.mean(accuracyList)))
+        file.write("Accuracy Std: {}\n".format(np.std(accuracyList)))
+        
+        file.write("Precision Mean: {}\n".format(np.mean(precisionList)))
+        file.write("Precision Std: {}\n".format(np.std(precisionList)))
+        
+        file.write("Recall Mean: {}\n".format(np.mean(recallList)))
+        file.write("Recall Std: {}\n".format(np.std(recallList)))
+
+        file.write("F1Score Mean: {}\n".format(np.mean(f1ScoreList)))
+        file.write("F1Score Std: {}\n".format(np.std(f1ScoreList)))
+
 
 def main():
     options = [["Neural Network", trainNN], ["Decision Tree", trainDT]]

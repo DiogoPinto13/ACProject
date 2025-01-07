@@ -1,0 +1,45 @@
+Iteration: 1
+Accuracy Mean: 0.775
+Accuracy Std: 0.0
+Precision Mean: 0.72
+Precision Std: 0.0
+Recall Mean: 0.47368421052631576
+Recall Std: 0.0
+F1Score Mean: 0.5714285714285714
+F1Score Std: 0.0
+Iteration: 2
+Accuracy Mean: 0.7375
+Accuracy Std: 0.03750000000000003
+Precision Mean: 0.64125
+Precision Std: 0.07874999999999999
+Recall Mean: 0.35526315789473684
+Recall Std: 0.11842105263157894
+F1Score Mean: 0.45238095238095233
+F1Score Std: 0.11904761904761904
+Iteration: 3
+Accuracy Mean: 0.7277777777777779
+Accuracy Std: 0.03356401659331827
+Precision Mean: 0.6941666666666667
+Precision Std: 0.09866469592626445
+Recall Mean: 0.2719298245614035
+Recall Std: 0.1524398876928313
+F1Score Mean: 0.3636028054632705
+F1Score Std: 0.15878080008052928
+Iteration: 4
+Accuracy Mean: 0.7395833333333334
+Accuracy Std: 0.03553900439423331
+Precision Mean: 0.6849107142857143
+Precision Std: 0.0869371015740808
+Recall Mean: 0.35526315789473684
+Recall Std: 0.19560616772787506
+F1Score Mean: 0.4302363506727953
+F1Score Std: 0.17952324333419648
+Iteration: 5
+Accuracy Mean: 0.7283333333333333
+Accuracy Std: 0.03894440481849309
+Precision Mean: nan
+Precision Std: nan
+Recall Mean: 0.28421052631578947
+Recall Std: 0.2253959274248827
+F1Score Mean: nan
+F1Score Std: nan
