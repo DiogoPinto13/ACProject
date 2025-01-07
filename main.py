@@ -27,6 +27,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.tree import plot_tree
 import threading
 import os
+from tensorflow.keras.callbacks import EarlyStopping
 
 def changeDataset(df):
     """This function is meant to remove dropna values and remove spaces in strings"""
@@ -107,11 +108,14 @@ def trainNN(dfTrain, dfTargetTrain, dfTest, dfTargetTest, accuracyList, precisio
 
     model.add(Dense(dfTrain.shape[1], activation="relu"))
     model.add(Dense(dfTrain.shape[1], activation="relu"))
+    model.add(Dense(5, activation="relu"))
+    model.add(Dense(3, activation="relu"))
     model.add(Dense(1, activation="linear"))
 
+    earlyStopping = EarlyStopping(patience=10, min_delta=1e-3, monitor="val_loss", restore_best_weights=True)
     model.compile(loss="binary_crossentropy", optimizer='adam', metrics=['accuracy'])
 
-    model.fit(dfTrain, dfTargetTrain, batch_size=32, epochs=10, verbose=1)
+    model.fit(dfTrain, dfTargetTrain, batch_size=16, epochs=100, verbose=1, callbacks=[earlyStopping])
 
     predictions = (model.predict(dfTest) > 0.5).astype(int)
     accuracyList.append(accuracy_score(dfTargetTest, predictions))
@@ -216,8 +220,11 @@ def trainImg(dfImgNormal, dfImgAnomaly, dfImg, dfTarget):
         layers.Flatten(),
         layers.Dense(inputDim)
     ])
+
+    earlyStopping = EarlyStopping(patience=5, min_delta=1e-3, monitor="loss", restore_best_weights=True)
+
     autoencoder.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.01), loss="mae")
-    autoencoder.fit(dfImgNormalTrain, dfImgNormalTrain, batch_size=32, epochs=50, verbose=1)
+    autoencoder.fit(dfImgNormalTrain, dfImgNormalTrain, batch_size=16, epochs=100, verbose=1, callbacks=[earlyStopping])
 
     #evaluation
     trainMae = autoencoder.evaluate(dfImgNormalTrain, dfImgNormalTrain, verbose=0)
