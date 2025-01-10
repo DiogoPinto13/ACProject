@@ -315,13 +315,13 @@ def calculateConfidenceInterval(mean, std):
     return ci_original
 
 def comparePerformance(firstResults, secondResults, metric, resultName):
-    x = ['Phase']
+    x = ['Model']
     firstY = firstResults
     secondY = secondResults
 
     xAxis = np.arange(len(x)) 
-    plt.bar(xAxis - 0.1, firstY, 0.1, label = 'Neural Network') 
-    plt.bar(xAxis, secondY, 0.1, label = 'Decision Tree') 
+    plt.bar(xAxis - 0.2, firstY, 0.4, label = 'Neural Network') 
+    plt.bar(xAxis + 0.2, secondY, 0.5, label = 'Decision Tree') 
 
     plt.xticks(xAxis, x) 
     plt.ylabel(metric) 
@@ -339,14 +339,14 @@ def plotResults(options):
     print("Precision (NN) = " + str(calculateConfidenceInterval(metricsList[0]['Precision']['mean'], metricsList[0]['Precision']['std'])))
     print("Precison (DT) = " + str(calculateConfidenceInterval(metricsList[1]['Precision']['mean'], metricsList[1]['Precision']['std'])))
     print("Recall (NN) = " + str(calculateConfidenceInterval(metricsList[0]['Recall']['mean'], metricsList[0]['Recall']['std'])))
-    print("Recall (DT) = " + str(calculateConfidenceInterval(metricsList[1]['Accuracy']['mean'], metricsList[1]['Accuracy']['std'])))
+    print("Recall (DT) = " + str(calculateConfidenceInterval(metricsList[1]['Recall']['mean'], metricsList[1]['Recall']['std'])))
     print("F1 Score (NN) = " + str(calculateConfidenceInterval(metricsList[0]['F1Score']['mean'], metricsList[0]['F1Score']['std'])))
     print("F1 Score (DT) = " + str(calculateConfidenceInterval(metricsList[1]['F1Score']['mean'], metricsList[1]['F1Score']['std'])))
     
     #comparePerformance(metricsList[0]['Accuracy']['mean'], metricsList[1]['Accuracy']['mean'], "Accuracy", "resultAcc.png")
     #comparePerformance(metricsList[0]['Precision']['mean'], metricsList[1]['Precision']['mean'], "Precision", "resultPr.png")
-    #comparePerformance(metricsList[0]['Recall']['mean'], metricsList[1]['Recall']['mean'], "Recall", "resultRec.png")
-    comparePerformance(metricsList[0]['F1Score']['mean'], metricsList[1]['F1Score']['mean'], "F1Score", "resultF1.png")
+    comparePerformance(metricsList[0]['Recall']['mean'], metricsList[1]['Recall']['mean'], "Recall", "resultRec.png")
+    #comparePerformance(metricsList[0]['F1Score']['mean'], metricsList[1]['F1Score']['mean'], "F1Score", "resultF1.png")
 
 
 def main():
