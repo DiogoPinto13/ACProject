@@ -223,3 +223,11 @@ Recall Mean: 0.5263157894736842
 Recall Std: 0.0
 F1Score Mean: 0.625
 F1Score Std: 0.0
+Accuracy Mean: 0.75
+Accuracy Std: 0.0
+Precision Mean: 0.7857142857142857
+Precision Std: 0.0
+Recall Mean: 0.2894736842105263
+Recall Std: 0.0
+F1Score Mean: 0.423076923076923
+F1Score Std: 0.0

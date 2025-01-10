@@ -92,9 +92,9 @@ def startTrain(optionFunction, optionString, dfTrain, dfTargetTrain, dfTest, dfT
     iteration = 0
 
     for i in range(5):
-        iteration += 1
         optionFunction(dfTrain, dfTargetTrain, dfTest, dfTargetTest, accuracyList, precisionList, recallList, f1ScoreList)
-        writeResults(iteration, optionString, accuracyList, precisionList, recallList, f1ScoreList)
+    
+    writeResults(optionString, accuracyList, precisionList, recallList, f1ScoreList)
     
     print("Accurancy: ", accuracyList)
     print("Precision: ", precisionList)
@@ -258,12 +258,11 @@ def trainImg(dfImgNormal, dfImgAnomaly, dfImg, dfTarget):
     
     return predictions
 
-def writeResults(iteration, option, accuracyList, precisionList, recallList, f1ScoreList):
+def writeResults(option, accuracyList, precisionList, recallList, f1ScoreList):
     filePath = str(option) + ".txt"
     
     #append mode
     with open(filePath, 'a') as file:
-        file.write("Iteration: {}\n".format(iteration))
         file.write("Accuracy Mean: {}\n".format(np.mean(accuracyList)))
         file.write("Accuracy Std: {}\n".format(np.std(accuracyList)))
         
@@ -276,35 +275,59 @@ def writeResults(iteration, option, accuracyList, precisionList, recallList, f1S
         file.write("F1Score Mean: {}\n".format(np.mean(f1ScoreList)))
         file.write("F1Score Std: {}\n".format(np.std(f1ScoreList)))
 
+def readResults(options):
+    pass
+    # for option in options:
+
+    #     filePath = str(option[1]) + ".txt"
+    #     #append mode
+    #     with open(filePath, 'a') as file:
+    #         file.write("Accuracy Mean: {}\n".format(np.mean(accuracyList)))
+    #         file.write("Accuracy Std: {}\n".format(np.std(accuracyList)))
+            
+    #         file.write("Precision Mean: {}\n".format(np.mean(precisionList)))
+    #         file.write("Precision Std: {}\n".format(np.std(precisionList)))
+            
+    #         file.write("Recall Mean: {}\n".format(np.mean(recallList)))
+    #         file.write("Recall Std: {}\n".format(np.std(recallList)))
+
+    #         file.write("F1Score Mean: {}\n".format(np.mean(f1ScoreList)))
+    #         file.write("F1Score Std: {}\n".format(np.std(f1ScoreList)))
+
 
 def main():
+    train = True
     options = [["Neural Network", trainNN], ["Decision Tree", trainDT]]
-    dfData, dfTarget = preProcessFirstData("COVID_numerics.csv")
-    dfImgNormal, dfImgAnomaly, dfImg = preProcessSecondData("COVID_IMG.csv", dfTarget)
-    print(dfData.head(5))
-    print(dfTarget.head(5))
+    
+    if train == True:
+        dfData, dfTarget = preProcessFirstData("COVID_numerics.csv")
+        dfImgNormal, dfImgAnomaly, dfImg = preProcessSecondData("COVID_IMG.csv", dfTarget)
+        print(dfData.head(5))
+        print(dfTarget.head(5))
 
-    predictions = trainImg(dfImgNormal, dfImgAnomaly, dfImg, dfTarget)
-    predictions = tf.cast(predictions,tf.float32).numpy()
-    
-    print("Predictions:", predictions)
-    
-    #add the predictions of the ECG
-    dfData[dfData.columns.size] = predictions
-    dfTrain, dfTest, dfTargetTrain, dfTargetTest = train_test_split(dfData, dfTarget, test_size=0.2, random_state=42)
-
-    print("dfData:",dfData.head(5))
-    print("dfTrain: ", dfTrain.head(5))
-    hOptions = list()
-    
-    for i in range(len(options)):
-        hOptions.append(threading.Thread(target=startTrain, args=(options[i][1], options[i][0], dfTrain, dfTargetTrain, dfTest, dfTargetTest)))
-    
-    for i in range(len(hOptions)):
-        hOptions[i].start()
-    for i in range(len(hOptions)):
-        hOptions[i].join()
+        predictions = trainImg(dfImgNormal, dfImgAnomaly, dfImg, dfTarget)
+        predictions = tf.cast(predictions,tf.float32).numpy()
         
+        print("Predictions:", predictions)
+        
+        #add the predictions of the ECG
+        dfData[dfData.columns.size] = predictions
+        dfTrain, dfTest, dfTargetTrain, dfTargetTest = train_test_split(dfData, dfTarget, test_size=0.2, random_state=42)
+
+        print("dfData:",dfData.head(5))
+        print("dfTrain: ", dfTrain.head(5))
+        hOptions = list()
+        
+        for i in range(len(options)):
+            hOptions.append(threading.Thread(target=startTrain, args=(options[i][1], options[i][0], dfTrain, dfTargetTrain, dfTest, dfTargetTest)))
+        
+        for i in range(len(hOptions)):
+            hOptions[i].start()
+        for i in range(len(hOptions)):
+            hOptions[i].join()
+
+    else:
+        readResults(options)  
 
 if __name__ == "__main__":
     main()
