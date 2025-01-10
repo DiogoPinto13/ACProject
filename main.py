@@ -275,28 +275,82 @@ def writeResults(option, accuracyList, precisionList, recallList, f1ScoreList):
         file.write("F1Score Mean: {}\n".format(np.mean(f1ScoreList)))
         file.write("F1Score Std: {}\n".format(np.std(f1ScoreList)))
 
-def readResults(options):
-    pass
-    # for option in options:
+def loadMetrics(options):
+    metricsList = list()
+    
+    for option in options:
+        filePath = option[0]
+        metrics = {}
+        filePath += ".txt"
+        if not os.path.exists(filePath):
+            print(f"File not found: {filePath}")
+            return None
 
-    #     filePath = str(option[1]) + ".txt"
-    #     #append mode
-    #     with open(filePath, 'a') as file:
-    #         file.write("Accuracy Mean: {}\n".format(np.mean(accuracyList)))
-    #         file.write("Accuracy Std: {}\n".format(np.std(accuracyList)))
-            
-    #         file.write("Precision Mean: {}\n".format(np.mean(precisionList)))
-    #         file.write("Precision Std: {}\n".format(np.std(precisionList)))
-            
-    #         file.write("Recall Mean: {}\n".format(np.mean(recallList)))
-    #         file.write("Recall Std: {}\n".format(np.std(recallList)))
+        with open(filePath, 'r') as file:
+            for line in file:
+                try:
+                    metric, statValue = line.strip().split(': ')
+                    stat_name, statType = metric.rsplit(' ', 1)  # Split "MetricName Mean/Std"
+                    statType = statType.lower()
 
-    #         file.write("F1Score Mean: {}\n".format(np.mean(f1ScoreList)))
-    #         file.write("F1Score Std: {}\n".format(np.std(f1ScoreList)))
+                    if stat_name not in metrics:
+                        metrics[stat_name] = {}
+                    metrics[stat_name][statType] = float(statValue)
+                except ValueError:
+                    print(f"Skipping invalid line: {line.strip()}")
+        metricsList.append(metrics)
+    #print(metricsList)
+    return metricsList
+
+def calculateConfidenceInterval(mean, std):
+    z_score = 1.96
+    n = 30
+
+    mu_original =  mean
+    std_original = std
+    margin_error_original = z_score * (std_original / np.sqrt(n))
+    ci_original = (mu_original - margin_error_original, mu_original + margin_error_original)
+
+    print(ci_original)
+    return ci_original
+
+def comparePerformance(firstResults, secondResults, metric, resultName):
+    x = ['Phase']
+    firstY = firstResults
+    secondY = secondResults
+
+    xAxis = np.arange(len(x)) 
+    plt.bar(xAxis - 0.1, firstY, 0.1, label = 'Neural Network') 
+    plt.bar(xAxis, secondY, 0.1, label = 'Decision Tree') 
+
+    plt.xticks(xAxis, x) 
+    plt.ylabel(metric) 
+    plt.title("Comparison of the performance with different algorithms:") 
+    plt.legend() 
+    plt.grid(True, linestyle = '--', linewidth = 0.5)
+    plt.show() 
+    plt.savefig(resultName)
+
+def plotResults(options):
+    metricsList = loadMetrics(options)
+    
+    print("Accuracy (NN) = " + str(calculateConfidenceInterval(metricsList[0]['Accuracy']['mean'], metricsList[0]['Accuracy']['std'])))
+    print("Accuracy (DT) = " + str(calculateConfidenceInterval(metricsList[1]['Accuracy']['mean'], metricsList[1]['Accuracy']['std'])))
+    print("Precision (NN) = " + str(calculateConfidenceInterval(metricsList[0]['Precision']['mean'], metricsList[0]['Precision']['std'])))
+    print("Precison (DT) = " + str(calculateConfidenceInterval(metricsList[1]['Precision']['mean'], metricsList[1]['Precision']['std'])))
+    print("Recall (NN) = " + str(calculateConfidenceInterval(metricsList[0]['Recall']['mean'], metricsList[0]['Recall']['std'])))
+    print("Recall (DT) = " + str(calculateConfidenceInterval(metricsList[1]['Accuracy']['mean'], metricsList[1]['Accuracy']['std'])))
+    print("F1 Score (NN) = " + str(calculateConfidenceInterval(metricsList[0]['F1Score']['mean'], metricsList[0]['F1Score']['std'])))
+    print("F1 Score (DT) = " + str(calculateConfidenceInterval(metricsList[1]['F1Score']['mean'], metricsList[1]['F1Score']['std'])))
+    
+    #comparePerformance(metricsList[0]['Accuracy']['mean'], metricsList[1]['Accuracy']['mean'], "Accuracy", "resultAcc.png")
+    #comparePerformance(metricsList[0]['Precision']['mean'], metricsList[1]['Precision']['mean'], "Precision", "resultPr.png")
+    #comparePerformance(metricsList[0]['Recall']['mean'], metricsList[1]['Recall']['mean'], "Recall", "resultRec.png")
+    comparePerformance(metricsList[0]['F1Score']['mean'], metricsList[1]['F1Score']['mean'], "F1Score", "resultF1.png")
 
 
 def main():
-    train = True
+    train = False
     options = [["Neural Network", trainNN], ["Decision Tree", trainDT]]
     
     if train == True:
@@ -327,7 +381,7 @@ def main():
             hOptions[i].join()
 
     else:
-        readResults(options)  
+        plotResults(options)  
 
 if __name__ == "__main__":
     main()
