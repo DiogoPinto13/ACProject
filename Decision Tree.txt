@@ -1,8 +1,8 @@
-Accuracy Mean: 0.7666666666666667
+Accuracy Mean: 0.8166666666666667
 Accuracy Std: 0.0
-Precision Mean: 0.6923076923076923
-Precision Std: 0.0
-Recall Mean: 0.47368421052631576
+Precision Mean: 0.9047619047619049
+Precision Std: 1.1102230246251565e-16
+Recall Mean: 0.48717948717948717
 Recall Std: 0.0
-F1Score Mean: 0.5625
-F1Score Std: 0.0
+F1Score Mean: 0.6333333333333332
+F1Score Std: 1.1102230246251565e-16

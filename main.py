@@ -28,13 +28,13 @@ from sklearn.tree import plot_tree
 import threading
 import os
 from tensorflow.keras.callbacks import EarlyStopping
+from sklearn.preprocessing import LabelEncoder
 
 def changeDataset(df):
     """This function is meant to remove dropna values and remove spaces in strings"""
-    #print(f'Nº null values: {df.isna().sum().sum()}')
     df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
-    df = df.rename(columns=lambda x: x.strip() if isinstance(x, str) else x)    # REMOVE SPACES IN STRING
-    df = df.dropna().reset_index(drop=True)                                     # REMOVE NULL VALUE
+    df = df.rename(columns=lambda x: x.strip() if isinstance(x, str) else x)
+    df = df.dropna().reset_index(drop=True)
     return df
 
 def deleteFeatures(df: pd.DataFrame, featuresList):
@@ -91,7 +91,7 @@ def startTrain(optionFunction, optionString, dfTrain, dfTargetTrain, dfTest, dfT
     f1ScoreList = list()
     iteration = 0
 
-    for i in range(5):
+    for i in range(30):
         optionFunction(dfTrain, dfTargetTrain, dfTest, dfTargetTest, accuracyList, precisionList, recallList, f1ScoreList)
     
     writeResults(optionString, accuracyList, precisionList, recallList, f1ScoreList)
@@ -107,10 +107,12 @@ def trainNN(dfTrain, dfTargetTrain, dfTest, dfTargetTest, accuracyList, precisio
     model = Sequential()
 
     model.add(Dense(dfTrain.shape[1], activation="relu"))
-    model.add(Dense(dfTrain.shape[1], activation="relu"))
+    model.add(Dense(dfTrain.shape[1] * 2 , activation="relu"))
+    model.add(Dense(dfTrain.shape[1] * 2 , activation="relu"))
+    model.add(Dense(dfTrain.shape[1] , activation="relu"))
     model.add(Dense(5, activation="relu"))
     model.add(Dense(3, activation="relu"))
-    model.add(Dense(1, activation="linear"))
+    model.add(Dense(1, activation="sigmoid"))
 
     earlyStopping = EarlyStopping(patience=10, min_delta=1e-3, monitor="val_loss", restore_best_weights=True)
     model.compile(loss="binary_crossentropy", optimizer='adam', metrics=['accuracy'])
@@ -119,16 +121,19 @@ def trainNN(dfTrain, dfTargetTrain, dfTest, dfTargetTest, accuracyList, precisio
 
     predictions = (model.predict(dfTest) > 0.5).astype(int)
     accuracyList.append(accuracy_score(dfTargetTest, predictions))
-    
+    precisionList.append(precision_score(dfTargetTest, predictions))
+    recallList.append(recall_score(dfTargetTest, predictions))
+    f1ScoreList.append(f1_score(dfTargetTest, predictions))
+
     cm    = confusion_matrix(dfTargetTest, predictions)
     TN, FP, FN, TP = cm.ravel()
     Precision    = TP/(TP+FP)
     Recall    = TP/(TP+FN)
     F1    = (2*Precision*Recall)/(Precision+Recall)
     
-    precisionList.append(Precision)
-    recallList.append(Recall)
-    f1ScoreList.append(F1)
+    #precisionList.append(Precision)
+    #recallList.append(Recall)
+    #f1ScoreList.append(F1)
 
 
 def trainDT(dfTrain, dfTargetTrain, dfTest, dfTargetTest, accuracyList, precisionList, recallList, f1ScoreList):
@@ -321,11 +326,11 @@ def comparePerformance(firstResults, secondResults, metric, resultName):
 
     xAxis = np.arange(len(x)) 
     plt.bar(xAxis - 0.2, firstY, 0.4, label = 'Neural Network') 
-    plt.bar(xAxis + 0.2, secondY, 0.5, label = 'Decision Tree') 
+    plt.bar(xAxis + 0.2, secondY, 0.4, label = 'Decision Tree') 
 
     plt.xticks(xAxis, x) 
     plt.ylabel(metric) 
-    plt.title("Comparison of the performance with different algorithms:") 
+    plt.title("Comparison of the performance in avg with different algorithms:") 
     plt.legend() 
     plt.grid(True, linestyle = '--', linewidth = 0.5)
     plt.show() 
@@ -345,8 +350,8 @@ def plotResults(options):
     
     #comparePerformance(metricsList[0]['Accuracy']['mean'], metricsList[1]['Accuracy']['mean'], "Accuracy", "resultAcc.png")
     #comparePerformance(metricsList[0]['Precision']['mean'], metricsList[1]['Precision']['mean'], "Precision", "resultPr.png")
-    comparePerformance(metricsList[0]['Recall']['mean'], metricsList[1]['Recall']['mean'], "Recall", "resultRec.png")
-    #comparePerformance(metricsList[0]['F1Score']['mean'], metricsList[1]['F1Score']['mean'], "F1Score", "resultF1.png")
+    #comparePerformance(metricsList[0]['Recall']['mean'], metricsList[1]['Recall']['mean'], "Recall", "resultRec.png")
+    comparePerformance(metricsList[0]['F1Score']['mean'], metricsList[1]['F1Score']['mean'], "F1Score", "resultF1.png")
 
 
 def main():
@@ -366,8 +371,8 @@ def main():
         
         #add the predictions of the ECG
         dfData[dfData.columns.size] = predictions
-        dfTrain, dfTest, dfTargetTrain, dfTargetTest = train_test_split(dfData, dfTarget, test_size=0.2, random_state=42)
-
+        dfTrain, dfTest, dfTargetTrain, dfTargetTest = train_test_split(dfData, dfTarget, test_size=0.2, random_state=42, stratify=dfTarget)
+        
         print("dfData:",dfData.head(5))
         print("dfTrain: ", dfTrain.head(5))
         hOptions = list()
